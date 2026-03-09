@@ -1,0 +1,8 @@
+{
+  "search_query": "AI OR 人工智能 min_faves:10",
+  "max_tweets": 5,
+  "min_likes": 10,
+  "min_retweets": 0,
+  "custom_instructions": "回复要友好、有建设性，可以适当提问或分享相关见解",
+  "language": "中文"
+}
