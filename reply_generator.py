@@ -1,6 +1,6 @@
 """
 AI 回复生成模块
-使用 OpenAI API 为推文生成回复
+使用火山引擎 API 为推文生成回复
 """
 
 import os
@@ -19,19 +19,35 @@ class ReplyOption:
 class ReplyGenerator:
     """回复生成器"""
     
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-3.5-turbo"):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        model: Optional[str] = None
+    ):
         """
         初始化回复生成器
         
         Args:
-            api_key: OpenAI API Key，如果不传则从环境变量读取
-            model: 使用的模型名称
+            api_key: 火山引擎 API Key，如果不传则从环境变量读取
+            base_url: API 基础 URL，默认使用火山引擎
+            model: 使用的模型名称，默认使用 Doubao-pro-4k
         """
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.api_key = api_key or os.getenv("VOLC_API_KEY")
         if not self.api_key:
-            raise ValueError("OpenAI API Key 未提供，请设置 OPENAI_API_KEY 环境变量")
-        self.client = OpenAI(api_key=self.api_key)
-        self.model = model
+            raise ValueError("火山引擎 API Key 未提供，请设置 VOLC_API_KEY 环境变量")
+        
+        # 火山引擎 API 配置
+        self.base_url = base_url or os.getenv(
+            "VOLC_API_BASE",
+            "https://ark.cn-beijing.volces.com/api/v3"
+        )
+        self.model = model or os.getenv("VOLC_MODEL", "doubao-pro-4k")
+        
+        self.client = OpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url
+        )
     
     def generate_replies(
         self,
@@ -84,7 +100,7 @@ class ReplyGenerator:
 
 请生成不同风格的回复选项。"""
 
-        # 调用 API
+        # 调用火山引擎 API
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
