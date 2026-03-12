@@ -1,6 +1,6 @@
 """
 AI 回复生成模块
-使用火山引擎 API 为推文生成回复
+支持多个 AI 服务提供商（火山引擎、DeepSeek 等）
 """
 
 import os
@@ -21,6 +21,7 @@ class ReplyGenerator:
     
     def __init__(
         self,
+        provider: Optional[str] = None,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         model: Optional[str] = None
@@ -29,26 +30,37 @@ class ReplyGenerator:
         初始化回复生成器
         
         Args:
-            api_key: 火山引擎 API Key，如果不传则从环境变量读取
-            base_url: API 基础 URL，默认使用火山引擎
-            model: 使用的模型名称，默认使用 Doubao-pro-4k
+            provider: AI 服务提供商 (volc, deepseek)
+            api_key: API Key
+            base_url: API 基础 URL
+            model: 使用的模型名称
         """
-        self.api_key = api_key or os.getenv("VOLC_API_KEY")
-        if not self.api_key:
-            raise ValueError("火山引擎 API Key 未提供，请设置 VOLC_API_KEY 环境变量")
+        # 确定使用哪个提供商
+        self.provider = provider or os.getenv("AI_PROVIDER", "deepseek")
         
-        # 火山引擎 API 配置
-        self.base_url = base_url or os.getenv(
-            "VOLC_API_BASE",
-            "https://ark.cn-beijing.volces.com/api/v3"
-        )
-        self.model = model or os.getenv("VOLC_MODEL", "doubao-pro-4k")
+        if self.provider == "deepseek":
+            self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
+            self.base_url = base_url or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+            self.model = model or os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+            self.provider_name = "DeepSeek"
+        elif self.provider == "volc":
+            self.api_key = api_key or os.getenv("VOLC_API_KEY")
+            self.base_url = base_url or os.getenv("VOLC_API_BASE", "https://ark.cn-beijing.volces.com/api/v3")
+            self.model = model or os.getenv("VOLC_MODEL", "doubao-pro-4k")
+            self.provider_name = "火山引擎"
+        else:
+            raise ValueError(f"不支持的 AI 提供商：{self.provider}")
+        
+        if not self.api_key:
+            raise ValueError(f"{self.provider_name} API Key 未提供，请配置相应的环境变量")
         
         self.client = OpenAI(
             api_key=self.api_key,
             base_url=self.base_url
         )
-    
+        
+        print(f"✅ AI 服务：{self.provider_name} ({self.model})")
+
     def generate_replies(
         self,
         tweet_text: str,
@@ -100,7 +112,7 @@ class ReplyGenerator:
 
 请生成不同风格的回复选项。"""
 
-        # 调用火山引擎 API
+        # 调用 API
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
