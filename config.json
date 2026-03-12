@@ -16,9 +16,9 @@
   },
   "rate_limit": {
     "enabled": true,
-    "interval_minutes": 30,
-    "max_per_hour": 10,
-    "max_per_day": 50
+    "interval_minutes": 3,
+    "max_per_hour": 20,
+    "max_per_day": 100
   },
   "reply": {
     "custom_instructions": "回复要友好、有建设性，可以适当提问或分享相关见解",
