@@ -154,7 +154,7 @@ python3 login_twitter.py
 
 ```bash
 # 火山引擎 API
-VOLC_API_KEY=988d1ddf-132c-45d2-935b-b3bb259bd01d
+VOLC_API_KEY=your-volc-api-key-here
 
 # Telegram
 TELEGRAM_BOT_TOKEN=xxx

@@ -67,7 +67,7 @@
 **状态**: ✅ 已配置
 
 **配置**:
-- Bot Token: `YOUR-TELEGRAM-BOT-TOKEN-HERE`
+- Bot Token: `your-telegram-bot-token-here`
 - Chat ID: `8627317531`
 
 ---
