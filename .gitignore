@@ -1,0 +1,12 @@
+# Local env secrets
+.env
+
+# Runtime/cache artifacts
+__pycache__/
+*.pyc
+
+# Local workflow state
+twitter_cookies.json
+processed_tweets.json
+rate_limit_state.json
+workflow.log
