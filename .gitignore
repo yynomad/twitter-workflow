@@ -1,0 +1,35 @@
+# 敏感信息
+.env
+*.key
+*.pem
+*.crt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Cookie 和状态
+twitter_cookies.json
+processed_tweets.json
+rate_limit_state.json
+
+# 测试文件
+*.png
+*.jpg
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
