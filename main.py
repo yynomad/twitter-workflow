@@ -186,6 +186,9 @@ def filter_tweets_by_time(tweets: list[Tweet], hours: int) -> list[Tweet]:
         try:
             if hasattr(tweet, 'created_at') and tweet.created_at:
                 tweet_time = parse_tweet_time(tweet.created_at)
+                if tweet_time and tweet_time.tzinfo is not None:
+                    tweet_time = tweet_time.replace(tzinfo=None)
+
                 if tweet_time and tweet_time >= cutoff_time:
                     filtered.append(tweet)
         except Exception as e:
@@ -200,6 +203,8 @@ def parse_tweet_time(time_str: str) -> datetime:
     formats = [
         "%a %b %d %H:%M:%S %z %Y",  # Tue Mar 11 12:00:00 +0000 2026
         "%Y-%m-%dT%H:%M:%S.%fZ",    # 2026-03-11T12:00:00.000Z
+        "%Y-%m-%dT%H:%M:%S.%f",     # 2026-03-11T12:00:00.000000
+        "%Y-%m-%dT%H:%M:%S",        # 2026-03-11T12:00:00
         "%Y-%m-%d %H:%M:%S",        # 2026-03-11 12:00:00
     ]
     
@@ -222,9 +227,21 @@ def filter_tweets_by_engagement(
     filtered = []
     
     for tweet in tweets:
-        likes = getattr(tweet, 'likes', 0) or 0
-        retweets = getattr(tweet, 'retweets', 0) or 0
-        views = getattr(tweet, 'views', 0) or 0
+        likes = getattr(tweet, 'like_count', None)
+        if likes is None:
+            likes = getattr(tweet, 'likes', 0)
+
+        retweets = getattr(tweet, 'retweet_count', None)
+        if retweets is None:
+            retweets = getattr(tweet, 'retweets', 0)
+
+        views = getattr(tweet, 'view_count', None)
+        if views is None:
+            views = getattr(tweet, 'views', 0)
+
+        likes = likes or 0
+        retweets = retweets or 0
+        views = views or 0
         
         if likes >= min_likes and retweets >= min_retweets and views >= min_views:
             filtered.append(tweet)
@@ -252,18 +269,37 @@ def select_tweets(
     # 如果需要排序
     if sort_by != "random":
         def get_engagement(tweet):
-            return (getattr(tweet, 'likes', 0) or 0) + \
-                   (getattr(tweet, 'retweets', 0) or 0) * 2 + \
-                   (getattr(tweet, 'views', 0) or 0) * 0.01
+            likes = getattr(tweet, 'like_count', None)
+            if likes is None:
+                likes = getattr(tweet, 'likes', 0)
+
+            retweets = getattr(tweet, 'retweet_count', None)
+            if retweets is None:
+                retweets = getattr(tweet, 'retweets', 0)
+
+            views = getattr(tweet, 'view_count', None)
+            if views is None:
+                views = getattr(tweet, 'views', 0)
+
+            return (likes or 0) + (retweets or 0) * 2 + (views or 0) * 0.01
         
         if sort_by == "engagement":
             tweets.sort(key=get_engagement, reverse=True)
         elif sort_by == "likes":
-            tweets.sort(key=lambda t: getattr(t, 'likes', 0) or 0, reverse=True)
+            tweets.sort(
+                key=lambda t: (getattr(t, 'like_count', None) or getattr(t, 'likes', 0) or 0),
+                reverse=True
+            )
         elif sort_by == "retweets":
-            tweets.sort(key=lambda t: getattr(t, 'retweets', 0) or 0, reverse=True)
+            tweets.sort(
+                key=lambda t: (getattr(t, 'retweet_count', None) or getattr(t, 'retweets', 0) or 0),
+                reverse=True
+            )
         elif sort_by == "views":
-            tweets.sort(key=lambda t: getattr(t, 'views', 0) or 0, reverse=True)
+            tweets.sort(
+                key=lambda t: (getattr(t, 'view_count', None) or getattr(t, 'views', 0) or 0),
+                reverse=True
+            )
     
     # 根据模式选择
     if mode == "random":
@@ -434,7 +470,7 @@ async def run_workflow_async(config: dict, dry_run: bool = False, headless: bool
         else:
             success = 0
             for msg in messages:
-                if bot.send_tweet_message(msg):
+                if bot.send_tweet_with_replies(msg):
                     success += 1
         
         print(f"   ✅ 成功发送 {success} 条消息")
