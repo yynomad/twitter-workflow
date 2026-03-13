@@ -434,24 +434,39 @@ async def run_workflow_async(config: dict, dry_run: bool = False, headless: bool
         print(f"\n   [{i}/{len(selected_tweets)}] 处理推文：{tweet.id}")
         
         try:
-            replies = generator.generate_replies(
+            # 使用新的翻译功能
+            result = generator.generate_replies(
                 tweet_text=tweet.text,
                 tweet_author=tweet.author_username,
                 num_replies=3,
                 custom_instructions=reply_config.get("custom_instructions", ""),
-                language=reply_config.get("language", "中文")
+                language=reply_config.get("language", "中文"),
+                include_translation=True
             )
             
-            print(f"       ✅ 生成 {len(replies)} 条回复")
+            print(f"       ✅ 生成 {len(result['replies'])} 条回复")
+            
+            # 构建消息内容（包含翻译）
+            tweet_display = tweet.text
+            if result.get('translated_tweet'):
+                tweet_display = f"{tweet.text}\n\n[翻译]\n{result['translated_tweet']}"
+            
+            # 构建回复选项（包含翻译）
+            reply_options = []
+            for r in result['replies']:
+                reply_text = r['content']
+                if r.get('translation'):
+                    reply_text = f"{r['content']}\n\n[翻译]\n{r['translation']}"
+                reply_options.append({
+                    "style": r['style'],
+                    "content": reply_text
+                })
             
             msg = TweetMessage(
-                tweet_text=tweet.text,
+                tweet_text=tweet_display,
                 tweet_url=tweet.url,
                 author=tweet.author_username,
-                reply_options=[
-                    {"style": r.style, "content": r.content}
-                    for r in replies
-                ]
+                reply_options=reply_options
             )
             messages.append(msg)
             
