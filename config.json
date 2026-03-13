@@ -1,13 +1,13 @@
 {
   "search": {
-    "query": "AI OR 人工智能",
-    "time_range_hours": 24,
-    "min_likes": 10,
+    "query": "",
+    "time_range_hours": 0,
+    "min_likes": 0,
     "min_retweets": 0,
-    "min_views": 1000,
-    "exclude_replies": true,
-    "exclude_retweets": true,
-    "language": "en"
+    "min_views": 0,
+    "exclude_replies": false,
+    "exclude_retweets": false,
+    "language": ""
   },
   "selection": {
     "mode": "random",
