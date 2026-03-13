@@ -4,7 +4,7 @@
 
 ### 1️⃣ 获取 API Key
 
-**已配置**：`988d1ddf-132c-45d2-935b-b3bb259bd01d`
+**示例**：`your_volc_api_key_here`
 
 如需重新获取：
 1. 访问 https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey
@@ -13,11 +13,11 @@
 
 ### 2️⃣ 环境变量配置
 
-`.env` 文件已配置：
+请在 `.env` 文件中按下面示例配置：
 
 ```bash
 # 火山引擎 API Key
-VOLC_API_KEY=988d1ddf-132c-45d2-935b-b3bb259bd01d
+VOLC_API_KEY=your_volc_api_key_here
 
 # API 基础 URL（可选，默认已配置）
 # VOLC_API_BASE=https://ark.cn-beijing.volces.com/api/v3
