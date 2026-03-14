@@ -618,36 +618,23 @@ def main():
         print(f"  检查结果：{'✅ 允许运行' if allowed else '❌ 禁止运行'} - {reason}")
         return
     
-    # 优先级：命令行参数 > 环境变量 > config.json
-    # 命令行参数覆盖配置
-    if args.query:
-        config["search"]["query"] = args.query
-    elif os.getenv("TWITTER_SEARCH_QUERY"):
+    # 只使用环境变量配置
+    if os.getenv("TWITTER_SEARCH_QUERY"):
         config["search"]["query"] = os.getenv("TWITTER_SEARCH_QUERY")
     
-    if args.hours > 0:
-        config["search"]["time_range_hours"] = args.hours
-    elif os.getenv("TWITTER_HOURS"):
+    if os.getenv("TWITTER_HOURS"):
         config["search"]["time_range_hours"] = int(os.getenv("TWITTER_HOURS", "0"))
     
-    if args.min_likes > 0:
-        config["search"]["min_likes"] = args.min_likes
-    elif os.getenv("TWITTER_MIN_LIKES"):
+    if os.getenv("TWITTER_MIN_LIKES"):
         config["search"]["min_likes"] = int(os.getenv("TWITTER_MIN_LIKES", "0"))
     
-    if args.min_views > 0:
-        config["search"]["min_views"] = args.min_views
-    elif os.getenv("TWITTER_MIN_VIEWS"):
+    if os.getenv("TWITTER_MIN_VIEWS"):
         config["search"]["min_views"] = int(os.getenv("TWITTER_MIN_VIEWS", "0"))
     
-    if args.num_tweets > 0:
-        config["selection"]["count"] = args.num_tweets
-    elif os.getenv("TWITTER_NUM_TWEETS"):
+    if os.getenv("TWITTER_NUM_TWEETS"):
         config["selection"]["count"] = int(os.getenv("TWITTER_NUM_TWEETS", "1"))
     
-    if args.mode:
-        config["selection"]["mode"] = args.mode
-    elif os.getenv("TWITTER_SELECTION_MODE"):
+    if os.getenv("TWITTER_SELECTION_MODE"):
         config["selection"]["mode"] = os.getenv("TWITTER_SELECTION_MODE", "random")
     
     # 运行工作流
