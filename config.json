@@ -1,17 +1,20 @@
 {
+  "search": {
+    "query": "AI OR 人工智能",
+    "time_range_hours": 24,
+    "min_likes": 10
+  },
+  "selection": {
+    "mode": "random",
+    "count": 1
+  },
   "rate_limit": {
     "enabled": true,
-    "interval_minutes": 3,
-    "max_per_hour": 20,
-    "max_per_day": 100
+    "interval_minutes": 5
   },
   "reply": {
     "custom_instructions": "回复要友好、有建设性，可以适当提问或分享相关见解",
     "language": "中文",
     "styles": ["专业", "幽默", "友好"]
-  },
-  "telegram": {
-    "enabled": true,
-    "batch_send": false
   }
 }
