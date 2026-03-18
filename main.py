@@ -231,11 +231,15 @@ async def run_workflow(config: dict, dry_run: bool = False, headless: bool = Tru
     print(f"   查询：{search_cfg.get('query', '')}")
     print(f"   时间：{search_cfg.get('time_range_hours', 24)}h 内")
     print(f"   最小点赞：{search_cfg.get('min_likes', 0)}")
+    print(f"   最小浏览：{search_cfg.get('min_views', 0)}")
+    print(f"   最大评论：{search_cfg.get('max_replies', 999999)}")
     
     tweets = await scraper.search_tweets(
         query=search_cfg.get("query", ""),
         max_results=50,
-        min_likes=search_cfg.get("min_likes", 0)
+        min_likes=search_cfg.get("min_likes", 0),
+        min_views=search_cfg.get("min_views", 0),
+        max_replies=search_cfg.get("max_replies", 999999)
     )
     print(f"   初始：{len(tweets)} 条")
     
