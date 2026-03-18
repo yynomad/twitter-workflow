@@ -30,12 +30,15 @@ async def test_search_tweets():
             return False
         print("   ✅ 已登录")
         
-        # 测试搜索
+        # 测试搜索 - 新条件：近 4 小时，views>500k, 评论<200
         print("\n3️⃣ 测试搜索：AI OR 人工智能")
+        print("   条件：近 4 小时，views>500k, 评论<200")
         tweets = await scraper.search_tweets(
             query="AI OR 人工智能",
             max_results=5,
-            min_likes=10
+            min_likes=0,
+            min_views=500000,
+            max_replies=200
         )
         
         print(f"\n📊 搜索结果：{len(tweets)} 条推文")
@@ -54,6 +57,8 @@ async def test_search_tweets():
             print(f"       内容：{tweet.text[:100]}...")
             print(f"       点赞：{tweet.like_count}")
             print(f"       转发：{tweet.retweet_count}")
+            print(f"       评论：{tweet.reply_count}")
+            print(f"       浏览：{tweet.view_count}")
             print(f"       链接：{tweet.url}")
         
         print("\n✅ 测试通过！")

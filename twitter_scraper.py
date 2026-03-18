@@ -23,6 +23,7 @@ class Tweet:
     like_count: int
     retweet_count: int
     reply_count: int
+    view_count: int
     url: str
 
 
@@ -88,7 +89,9 @@ class TwitterScraper:
         query: str,
         max_results: int = 10,
         min_likes: int = 0,
-        min_retweets: int = 0
+        min_retweets: int = 0,
+        min_views: int = 0,
+        max_replies: int = 999999
     ) -> List[Tweet]:
         """搜索推文"""
         if not self.page:
@@ -100,20 +103,36 @@ class TwitterScraper:
         
         url = f"https://twitter.com/search?q={encoded_query}&f=live"
         print(f"🔍 搜索：{search_query}")
+        print(f"   最小点赞：{min_likes}, 最小浏览：{min_views}, 最大评论：{max_replies}")
         
         await self.page.goto(url, wait_until="domcontentloaded")
         await asyncio.sleep(3)
         
-        # 滚动加载
-        for _ in range(5):
+        # 滚动加载（多滚动几次，确保 views 加载）
+        for i in range(8):
             await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(2)
+            await asyncio.sleep(2.5)  # 多等一会，让 views 数据加载
         
-        tweets = await self._extract_tweets(min_likes, min_retweets)
+        # 再向上滚动一次，触发懒加载
+        await self.page.evaluate("window.scrollTo(0, 0)")
+        await asyncio.sleep(2)
+        
+        # 再向下滚动
+        for _ in range(3):
+            await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(1.5)
+        
+        tweets = await self._extract_tweets(min_likes, min_retweets, min_views, max_replies)
         print(f"✅ 找到 {len(tweets)} 条推文")
         return tweets[:max_results]
     
-    async def _extract_tweets(self, min_likes: int, min_retweets: int) -> List[Tweet]:
+    async def _extract_tweets(
+        self,
+        min_likes: int = 0,
+        min_retweets: int = 0,
+        min_views: int = 0,
+        max_replies: int = 999999
+    ) -> List[Tweet]:
         """提取推文"""
         tweets = []
         articles = self.page.locator('article[data-testid="tweet"]')
@@ -140,6 +159,7 @@ class TwitterScraper:
                 like_count = 0
                 retweet_count = 0
                 reply_count = 0
+                view_count = 0
                 
                 like_elem = article.locator('div[data-testid="like"]')
                 if await like_elem.count() > 0:
@@ -153,8 +173,34 @@ class TwitterScraper:
                 if await reply_elem.count() > 0:
                     reply_count = self._parse_count(await reply_elem.first.inner_text())
                 
-                # 过滤
+                # 浏览数（Twitter 显示为 "1.5K views" 或 "1.5M views" 或 "1.5 万回表示"）
+                # Twitter 的 analytics 通常在推文底部的互动栏
+                view_count = 0
+                
+                # 方法 1: 查找包含 "views" 或 "回表示" 的 span
+                for text_pattern in ["views", "回表示", "Vues", "Vistas"]:
+                    view_elem = article.locator(f'span:has-text("{text_pattern}")')
+                    if await view_elem.count() > 0:
+                        view_text = await view_elem.first.inner_text()
+                        view_count = self._parse_count(view_text)
+                        if view_count > 0:
+                            break
+                
+                # 方法 2: 尝试 analytics 图标附近的文本
+                if view_count == 0:
+                    analytics_icon = article.locator('svg[data-testid="analyticsIcon"]')
+                    if await analytics_icon.count() > 0:
+                        # 获取图标父元素的文本
+                        parent = analytics_icon.locator('xpath=..')
+                        view_text = await parent.inner_text()
+                        view_count = self._parse_count(view_text)
+                
+                # 过滤条件
                 if like_count < min_likes or retweet_count < min_retweets:
+                    continue
+                if view_count < min_views:
+                    continue
+                if reply_count > max_replies:
                     continue
                 
                 # 链接和 ID
@@ -185,6 +231,7 @@ class TwitterScraper:
                     like_count=like_count,
                     retweet_count=retweet_count,
                     reply_count=reply_count,
+                    view_count=view_count,
                     url=status_url
                 ))
                 
