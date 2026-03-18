@@ -1,8 +1,9 @@
 {
   "search": {
-    "query": "AI OR 人工智能",
-    "time_range_hours": 24,
-    "min_likes": 10
+    "query": "AI OR artificial intelligence",
+    "time_range_hours": 4,
+    "min_likes": 50,
+    "max_replies": 200
   },
   "selection": {
     "mode": "random",

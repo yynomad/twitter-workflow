@@ -88,7 +88,9 @@ class TwitterScraper:
         query: str,
         max_results: int = 10,
         min_likes: int = 0,
-        min_retweets: int = 0
+        min_retweets: int = 0,
+        min_views: int = 0,
+        max_replies: int = 999999
     ) -> List[Tweet]:
         """搜索推文"""
         if not self.page:
@@ -100,20 +102,30 @@ class TwitterScraper:
         
         url = f"https://twitter.com/search?q={encoded_query}&f=live"
         print(f"🔍 搜索：{search_query}")
+        print(f"   最小点赞：{min_likes}, 最小浏览：{min_views}, 最大评论：{max_replies}")
         
         await self.page.goto(url, wait_until="domcontentloaded")
         await asyncio.sleep(3)
         
-        # 滚动加载
-        for _ in range(5):
+        # 滚动加载（等待互动数据加载）
+        for i in range(5):
             await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)  # 多等一会，让 JS 加载互动数据
         
-        tweets = await self._extract_tweets(min_likes, min_retweets)
+        # 等待页面完全加载
+        await asyncio.sleep(2)
+        
+        tweets = await self._extract_tweets(min_likes, min_retweets, min_views, max_replies)
         print(f"✅ 找到 {len(tweets)} 条推文")
         return tweets[:max_results]
     
-    async def _extract_tweets(self, min_likes: int, min_retweets: int) -> List[Tweet]:
+    async def _extract_tweets(
+        self,
+        min_likes: int = 0,
+        min_retweets: int = 0,
+        min_views: int = 0,
+        max_replies: int = 999999
+    ) -> List[Tweet]:
         """提取推文"""
         tweets = []
         articles = self.page.locator('article[data-testid="tweet"]')
@@ -153,8 +165,25 @@ class TwitterScraper:
                 if await reply_elem.count() > 0:
                     reply_count = self._parse_count(await reply_elem.first.inner_text())
                 
-                # 过滤
+                # 浏览数
+                view_count = 0
+                for pattern in ["views", "回表示", "Vues", "Vistas"]:
+                    view_elem = article.locator(f'span:has-text("{pattern}")')
+                    if await view_elem.count() > 0:
+                        view_text = await view_elem.first.inner_text()
+                        view_count = self._parse_count(view_text)
+                        if view_count > 0:
+                            break
+                
+                # 过滤条件（调试模式：打印前 10 条的数据）
+                if i < 10:
+                    print(f"   推文{i+1}: 👍{like_count} 💬{reply_count} 👁️{view_count} (过滤：min_likes={min_likes}, max_replies={max_replies})")
+                
                 if like_count < min_likes or retweet_count < min_retweets:
+                    continue
+                if view_count < min_views:
+                    continue
+                if reply_count > max_replies:
                     continue
                 
                 # 链接和 ID
@@ -185,6 +214,7 @@ class TwitterScraper:
                     like_count=like_count,
                     retweet_count=retweet_count,
                     reply_count=reply_count,
+                    view_count=view_count,
                     url=status_url
                 ))
                 
