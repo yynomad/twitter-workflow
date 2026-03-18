@@ -108,10 +108,19 @@ class TwitterScraper:
         await self.page.goto(url, wait_until="domcontentloaded")
         await asyncio.sleep(3)
         
-        # 滚动加载
-        for _ in range(5):
+        # 滚动加载（多滚动几次，确保 views 加载）
+        for i in range(8):
             await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await asyncio.sleep(2)
+            await asyncio.sleep(2.5)  # 多等一会，让 views 数据加载
+        
+        # 再向上滚动一次，触发懒加载
+        await self.page.evaluate("window.scrollTo(0, 0)")
+        await asyncio.sleep(2)
+        
+        # 再向下滚动
+        for _ in range(3):
+            await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await asyncio.sleep(1.5)
         
         tweets = await self._extract_tweets(min_likes, min_retweets, min_views, max_replies)
         print(f"✅ 找到 {len(tweets)} 条推文")
@@ -164,20 +173,27 @@ class TwitterScraper:
                 if await reply_elem.count() > 0:
                     reply_count = self._parse_count(await reply_elem.first.inner_text())
                 
-                # 浏览数（Twitter 显示为 "1.5K views" 或 "1.5M views"）
-                # 尝试多种选择器
+                # 浏览数（Twitter 显示为 "1.5K views" 或 "1.5M views" 或 "1.5 万回表示"）
+                # Twitter 的 analytics 通常在推文底部的互动栏
                 view_count = 0
-                for selector in [
-                    'div[data-testid="analytics"]',
-                    'span:has-text("views")',
-                    'span:has-text("回表示")',
-                ]:
-                    view_elem = article.locator(selector)
+                
+                # 方法 1: 查找包含 "views" 或 "回表示" 的 span
+                for text_pattern in ["views", "回表示", "Vues", "Vistas"]:
+                    view_elem = article.locator(f'span:has-text("{text_pattern}")')
                     if await view_elem.count() > 0:
                         view_text = await view_elem.first.inner_text()
                         view_count = self._parse_count(view_text)
                         if view_count > 0:
                             break
+                
+                # 方法 2: 尝试 analytics 图标附近的文本
+                if view_count == 0:
+                    analytics_icon = article.locator('svg[data-testid="analyticsIcon"]')
+                    if await analytics_icon.count() > 0:
+                        # 获取图标父元素的文本
+                        parent = analytics_icon.locator('xpath=..')
+                        view_text = await parent.inner_text()
+                        view_count = self._parse_count(view_text)
                 
                 # 过滤条件
                 if like_count < min_likes or retweet_count < min_retweets:

@@ -16,6 +16,7 @@ async def test_new_filters():
     print("   条件：近 4 小时，views>500k, 评论<200")
     print("=" * 60)
     
+    # 如果用 Mac，可以改成 headless=False 真实打开浏览器
     scraper = TwitterScraper(headless=True)
     
     try:
