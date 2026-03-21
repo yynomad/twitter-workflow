@@ -173,27 +173,43 @@ class TwitterScraper:
                 if await reply_elem.count() > 0:
                     reply_count = self._parse_count(await reply_elem.first.inner_text())
                 
-                # 浏览数（Twitter 显示为 "1.5K views" 或 "1.5M views" 或 "1.5 万回表示"）
-                # Twitter 的 analytics 通常在推文底部的互动栏
+                # 浏览数获取 - 采用多策略
                 view_count = 0
                 
-                # 方法 1: 查找包含 "views" 或 "回表示" 的 span
-                for text_pattern in ["views", "回表示", "Vues", "Vistas"]:
-                    view_elem = article.locator(f'span:has-text("{text_pattern}")')
-                    if await view_elem.count() > 0:
-                        view_text = await view_elem.first.inner_text()
-                        view_count = self._parse_count(view_text)
-                        if view_count > 0:
-                            break
+                # 方法 1: 获取所有 span，查找数字模式（和 twitter-auto-reply 一致）
+                # Twitter 的互动数据顺序通常是：回复、转发、点赞、浏览
+                # 浏览数是最后一个数字
+                all_spans = article.locator('span')
+                span_count = await all_spans.count()
+                numbers = []
                 
-                # 方法 2: 尝试 analytics 图标附近的文本
+                for j in range(span_count):
+                    try:
+                        span_text = await all_spans.nth(j).inner_text()
+                        span_text = span_text.strip()
+                        # 匹配数字模式：123, 1.5K, 2M, 1.5 万等
+                        if span_text and len(span_text) < 15:
+                            # 检查是否包含数字
+                            if any(c.isdigit() for c in span_text):
+                                # 排除明显不是计数的文本
+                                if not any(word in span_text.lower() for word in ['http', 'www', '@', '#', ':', '/']):
+                                    numbers.append(span_text)
+                    except:
+                        continue
+                
+                # 最后一个数字通常是 views
+                if numbers:
+                    view_count = self._parse_count(numbers[-1])
+                
+                # 方法 2: 查找包含 "views" 或 "回表示" 的 span（备用）
                 if view_count == 0:
-                    analytics_icon = article.locator('svg[data-testid="analyticsIcon"]')
-                    if await analytics_icon.count() > 0:
-                        # 获取图标父元素的文本
-                        parent = analytics_icon.locator('xpath=..')
-                        view_text = await parent.inner_text()
-                        view_count = self._parse_count(view_text)
+                    for text_pattern in ["views", "回表示", "Vues", "Vistas", "Vistas"]:
+                        view_elem = article.locator(f'span:has-text("{text_pattern}")')
+                        if await view_elem.count() > 0:
+                            view_text = await view_elem.first.inner_text()
+                            view_count = self._parse_count(view_text)
+                            if view_count > 0:
+                                break
                 
                 # 过滤条件
                 if like_count < min_likes or retweet_count < min_retweets:
